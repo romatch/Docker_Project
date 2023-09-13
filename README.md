@@ -4,8 +4,7 @@
 In the `yolo5/Dockerfile` update the `curl` command as follows (the `-L` flag was added):
 
 ```text
-- RUN curl https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt -o yolov5s.pt
-+ RUN curl -L https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt -o yolov5s.pt
+ RUN curl -L https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt -o yolov5s.pt
 ```
 
 ## Background

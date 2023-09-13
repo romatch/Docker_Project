@@ -1,6 +1,5 @@
 # Object Detection Service Project
-
-## Update I (2023-09-20)
+# Due date: 2023-09-20
 
 In the `yolo5/Dockerfile` update the `curl` command as follows (the `-L` flag was added):
 

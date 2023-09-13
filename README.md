@@ -1,12 +1,5 @@
 # Object Detection Service Project
 # Due date: 2023-09-20
-
-In the `yolo5/Dockerfile` update the `curl` command as follows (the `-L` flag was added):
-
-```text
- RUN curl -L https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt -o yolov5s.pt
-```
-
 ## Background
 
 In this project, you'll design, develop and deploy an object detection service that consists of multiple containerized microservices. 

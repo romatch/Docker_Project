@@ -6,6 +6,8 @@ import uuid
 import yaml
 from loguru import logger
 import os
+import boto3
+
 
 images_bucket = os.environ['BUCKET_NAME']
 
@@ -16,7 +18,8 @@ app = Flask(__name__)
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Generates a UUID for this current prediction HTTP request. This id can be used as a reference in logs to identify and track individual prediction requests.
+    # Generates a UUID for this current prediction HTTP request. This id can be used as a reference in logs to
+    # identify and track individual prediction requests.
     prediction_id = str(uuid.uuid4())
 
     logger.info(f'prediction: {prediction_id}. start processing')
@@ -42,8 +45,8 @@ def predict():
 
     logger.info(f'prediction: {prediction_id}/{original_img_path}. done')
 
-    # This is the path for the predicted image with labels
-    # The predicted image typically includes bounding boxes drawn around the detected objects, along with class labels and possibly confidence scores.
+    # This is the path for the predicted image with labels The predicted image typically includes bounding boxes
+    # drawn around the detected objects, along with class labels and possibly confidence scores.
     predicted_img_path = Path(f'static/data/{prediction_id}/{original_img_path}')
 
     # TODO Uploads the predicted image (predicted_img_path) to S3 (be careful not to override the original image).

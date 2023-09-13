@@ -1,6 +1,6 @@
 # Object Detection Service
 
-**Due date**: 2023-09-20
+**Due date**: 2023-
 
 ## Update I (2023-09-06)
 

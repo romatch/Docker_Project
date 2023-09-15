@@ -5,9 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
-venv/
+
 .githubtoken
-.venv/
+
 # Distribution / packaging
 .Python
 build/

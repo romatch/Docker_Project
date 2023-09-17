@@ -7,10 +7,32 @@ import yaml
 from loguru import logger
 import os
 import boto3
-from pymongo import MongoClient
+import pymongo
+
+aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
+aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+aws_region = os.environ['AWS_REGION']
+
+# Create the 'temp' directory if it doesn't exist
+temp_dir = 'temp'
+if not os.path.exists(temp_dir):
+    os.makedirs(temp_dir)
+
+session = boto3.Session(
+    aws_access_key_id=aws_access_key_id,
+    aws_secret_access_key=aws_secret_access_key,
+    region_name=aws_region
+)
+
+s3 = session.client('s3')
 
 images_bucket = os.environ['BUCKET_NAME']
-mongodb_uri = os.environ.get('MONGODB_URI')
+database_name = "mydb"
+collection_name = "predictions"
+mongodb_uri = f'mongodb://mongo1:27017,mongo2:27018,mongo3:27019/{database_name}?replicaSet=myReplicaSet'
+client = pymongo.MongoClient(mongodb_uri)
+db = client[database_name]
+collection = db[collection_name]
 
 with open("data/coco128.yaml", "r") as stream:
     names = yaml.safe_load(stream)['names']
@@ -30,8 +52,8 @@ def predict():
 
     # TODO download img_name from S3, store the local image path in original_img_path
     #  The bucket name should be provided as an env var BUCKET_NAME.
-    original_img_path = f"temp/{prediction_id}_{img_name}"
-    s3 = boto3.client('s3')
+    original_img_path = f"temp/{img_name}"
+
     try:
         s3.download_file(images_bucket, img_name, original_img_path)
     except Exception as e:
@@ -54,16 +76,18 @@ def predict():
 
     # This is the path for the predicted image with labels The predicted image typically includes bounding boxes
     # drawn around the detected objects, along with class labels and possibly confidence scores.
-    predicted_img_path = Path(f'static/data/{prediction_id}/{original_img_path}')
+    predicted_img_path = Path(f'static/data/{prediction_id}/{img_name}')
 
     # TODO Uploads the predicted image (predicted_img_path) to S3 (be careful not to override the original image).
     # Upload the predicted image to S3
     try:
-        s3.upload_file(predicted_img_path, images_bucket, f"predicted/{prediction_id}/{original_img_path.name}")
+        s3.upload_file(str(predicted_img_path), images_bucket, f"predicted/{prediction_id}/{img_name}")
     except Exception as e:
         logger.error(f"Failed to upload predicted image to S3: {str(e)}")
+
     # Parse prediction labels and create a summary
-    pred_summary_path = Path(f'static/data/{prediction_id}/labels/{original_img_path.split(".")[0]}.txt')
+    pred_summary_path = Path(f'static/data/{prediction_id}/labels/{img_name.split(".")[0]}.txt')
+
     if pred_summary_path.exists():
         with open(pred_summary_path) as f:
             labels = f.read().splitlines()
@@ -81,17 +105,18 @@ def predict():
         prediction_summary = {
             'prediction_id': prediction_id,
             'original_img_path': original_img_path,
-            'predicted_img_path': predicted_img_path,
+            'predicted_img_path': str(predicted_img_path),
             'labels': labels,
             'time': time.time()
         }
 
         # TODO store the prediction_summary in MongoDB
-        if mongodb_uri:
-            client = MongoClient(mongodb_uri)
-            db = client.get_database()
-            collection = db.get_collection("my_mongo")  # Replace with your collection name
-            collection.insert_one(prediction_summary)
+        logger.info(f'prediction: {prediction_id}/{original_img_path}. created prediction summery')
+        insert_id = collection.insert_one(prediction_summary)
+        logger.info(f'prediction: {prediction_id}/{original_img_path}. written to mongodb cluster. ID:{insert_id}')
+        prediction_summary.pop('_id')
+        logger.info(f'prediction: {prediction_id}/{original_img_path}. current pred_sum: {prediction_summary}')
+
         return prediction_summary
     else:
         return f'prediction: {prediction_id}/{original_img_path}. prediction result not found', 404

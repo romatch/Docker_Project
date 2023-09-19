@@ -1,4 +1,5 @@
 import flask
+import requests
 from flask import request
 import os
 from bot import ObjectDetectionBot
@@ -6,7 +7,10 @@ from bot import ObjectDetectionBot
 app = flask.Flask(__name__)
 
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
-TELEGRAM_APP_URL = os.environ['TELEGRAM_APP_URL']
+if os.environ.get('TELEGRAM_APP_URL'):
+    TELEGRAM_APP_URL = os.environ['TELEGRAM_APP_URL']
+else:
+    TELEGRAM_APP_URL = requests.get('http://169.254.169.254/latest/meta-data/public-ipv4').text
 
 
 @app.route('/', methods=['GET'])

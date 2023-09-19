@@ -1,13 +1,14 @@
-import json
-import boto3
-import requests
 import telebot
 from loguru import logger
 import os
 import time
 from telebot.types import InputFile
-from polybot.img_proc import Img
+from img_proc import Img
+import boto3
+import requests
+import json
 import sys
+
 
 class Bot:
     def __init__(self, token, telegram_chat_url):
@@ -20,12 +21,16 @@ class Bot:
         # set the webhook URL
         self.telegram_bot_client.set_webhook(url=f'{telegram_chat_url}/{token}/', timeout=60)
         logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
+
     def send_text(self, chat_id, text):
         self.telegram_bot_client.send_message(chat_id, text)
+
     def send_text_with_quote(self, chat_id, text, quoted_msg_id):
         self.telegram_bot_client.send_message(chat_id, text, reply_to_message_id=quoted_msg_id)
+
     def is_current_msg_photo(self, msg):
         return 'photo' in msg
+
     def download_user_photo(self, msg):
         """
         Downloads the photos that sent to the Bot to `photos` directory (should be existed)
@@ -54,17 +59,20 @@ class Bot:
             chat_id,
             InputFile(img_path)
         )
+
     def handle_message(self, msg):
         """Bot Main message handler"""
         logger.info(f'Incoming message: {msg}')
         if 'text' in msg:
             self.send_text(msg['chat']['id'], f'Your original message: {msg["text"]}')
 
+
 class QuoteBot(Bot):
     def handle_message(self, msg):
         logger.info(f'Incoming message: {msg}')
         if msg["text"] != 'Please don\'t quote me':
             self.send_text_with_quote(msg['chat']['id'], msg["text"], quoted_msg_id=msg["message_id"])
+
 
 class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url):
@@ -85,7 +93,8 @@ class ImageProcessingBot(Bot):
                 if "rotate" in caption.lower():
                     self.process_image_rotate(msg)
                 if "predict" in caption.lower():
-                    self.uploadonS3(msg)
+                    self.upload_and_predict(msg)
+
             else:
                 logger.info("Received photo without a caption.")
         elif "text" in msg:
@@ -100,17 +109,13 @@ class ImageProcessingBot(Bot):
 
         # Create two different Img objects from the downloaded images
         image = Img(image_path)
-        another_image = Img(another_image_path)
-
-        # Process the image using your custom methods (e.g., apply filter)
-        image.concat(another_image)  # Concatenate the two images
-
         # Save the processed image to the specified folder
         processed_image_path = image.save_img()
 
         if processed_image_path is not None:
             # Send the processed image back to the user
             self.send_photo(msg['chat']['id'], processed_image_path)
+
     def process_image_contur(self, msg):
         self.processing_completed = False
 
@@ -131,6 +136,7 @@ class ImageProcessingBot(Bot):
             self.send_photo(msg['chat']['id'], processed_image_path)
 
         self.processing_completed = True
+
     def process_image_rotate(self, msg):
         self.processing_completed = False
 
@@ -151,7 +157,8 @@ class ImageProcessingBot(Bot):
             self.send_photo(msg['chat']['id'], processed_image_path)
 
         self.processing_completed = True
-    def uploadonS3(self, msg):
+
+    def upload_and_predict(self, msg):
         self.processing_completed = False
         # Download the photo sent by the user
         # file_info = self.telegram_bot_client.get_file(msg['photo'][-1]['file_id'])
@@ -167,7 +174,7 @@ class ImageProcessingBot(Bot):
         time.sleep(5)
 
         # Send a request to the YOLO5 microservice # with the containers name once its build
-        yolo5_url = f'http://{'YOUR SERVICE NAME OR CONTAINER NAME'}:8081/predict?imgName={s3_key}'
+        yolo5_url = f'http://thirsty_faraday:8081/predict?imgName={s3_key}'
         response = requests.post(yolo5_url)
         if response.status_code == 200:
             # Print the JSON response as text
@@ -175,7 +182,7 @@ class ImageProcessingBot(Bot):
             print(json_response)
             sys.stdout.flush()
 
-            #Parse the Json file and send user a message:
+            # Parse the Json file and send user a message:
             response_data = json.loads(json_response)
             # Initialize a dictionary to store the class counts
             class_counts = {}

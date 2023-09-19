@@ -3,7 +3,7 @@ import requests
 from flask import request
 from bot import ImageProcessingBot
 import os
-
+from polybot import bot
 
 app = flask.Flask(__name__)
 

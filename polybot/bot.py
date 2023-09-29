@@ -64,7 +64,7 @@ class Bot:
         """Bot Main message handler"""
         logger.info(f'Incoming message: {msg}')
         if 'text' in msg:
-            self.send_text(msg['chat']['id'], f'Your original message: {msg["text"]}')
+            self.send_text(msg['chat']['id'], f'We upload picture here,but did you say?: {msg["text"]}')
 
 
 class QuoteBot(Bot):
@@ -94,7 +94,8 @@ class ImageProcessingBot(Bot):
                     self.process_image_rotate(msg)
                 if "predict" in caption.lower():
                     self.upload_and_predict(msg)
-
+                if "blur" in caption.lower():
+                    self.process_image_blur(msg)
             else:
                 logger.info("Received photo without a caption.")
         elif "text" in msg:
@@ -118,7 +119,7 @@ class ImageProcessingBot(Bot):
 
     def process_image_contur(self, msg):
         self.processing_completed = False
-
+        self.send_text(msg['chat']['id'], text=f'A few moments later =)')
         # Download the two photos sent by the user
         image_path = self.download_user_photo(msg)
 
@@ -133,13 +134,14 @@ class ImageProcessingBot(Bot):
 
         if processed_image_path is not None:
             # Send the processed image back to the user
+            self.send_text(msg['chat']['id'], text=f'Done!\nHere you go:')
             self.send_photo(msg['chat']['id'], processed_image_path)
 
         self.processing_completed = True
 
     def process_image_rotate(self, msg):
         self.processing_completed = False
-
+        self.send_text(msg['chat']['id'], text=f'A few moments later =)')
         # Download the two photos sent by the user
         image_path = self.download_user_photo(msg)
 
@@ -154,12 +156,14 @@ class ImageProcessingBot(Bot):
 
         if processed_image_path is not None:
             # Send the processed image back to the user
+            self.send_text(msg['chat']['id'], text=f'Done!\nHere you go:')
             self.send_photo(msg['chat']['id'], processed_image_path)
 
         self.processing_completed = True
 
     def upload_and_predict(self, msg):
         self.processing_completed = False
+        self.send_text(msg['chat']['id'], text=f'A few moments later =)')
         # Download the photo sent by the user
         # file_info = self.telegram_bot_client.get_file(msg['photo'][-1]['file_id'])
         # file_path_parts = file_info.file_path.split('/')
@@ -174,7 +178,7 @@ class ImageProcessingBot(Bot):
         time.sleep(5)
 
         # Send a request to the YOLO5 microservice # with the containers name once its build
-        yolo5_url = f'http:/yolo5-app:8081/predict?imgName={s3_key}'
+        yolo5_url = f'http://172.18.0.5:8081/predict?imgName={s3_key}'
         response = requests.post(yolo5_url)
         if response.status_code == 200:
             # Print the JSON response as text
@@ -196,11 +200,34 @@ class ImageProcessingBot(Bot):
                     class_counts[class_name] = 1
 
             # Create a message with the detected objects and their counts
-            message = "Detected Objects:\n"
+            message = "This what I find:\n"
             for class_name, count in class_counts.items():
                 message += f"{class_name}: {count}\n"
 
             # Send the message to the user
             self.telegram_bot_client.send_message(msg['chat']['id'], message)
+
+        self.processing_completed = True
+
+    def process_image_blur(self, msg):
+        self.processing_completed = False
+        self.send_text(msg['chat']['id'], text=f'A few moments later =)')
+
+        # Download the two photos sent by the user
+        image_path = self.download_user_photo(msg)
+
+        # Create two different Img objects from the downloaded images
+        image = Img(image_path)
+
+        # Process the image using your custom methods (e.g., apply filter)
+        image.blur()  # Blurs the image
+
+        # Save the processed image to the specified folder
+        processed_image_path = image.save_img()
+
+        if processed_image_path is not None:
+            # Send the processed image back to the user
+            self.send_text(msg['chat']['id'], text=f'Done!\nHere you go:')
+            self.send_photo(msg['chat']['id'], processed_image_path)
 
         self.processing_completed = True

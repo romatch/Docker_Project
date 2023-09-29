@@ -1,27 +1,35 @@
 version: '3'
 services:
   mongo1:
-    image: mongo
+    image: mongo:4.4.24
     container_name: mongo1
     networks:
       - mongoCluster
     ports:
       - "27017:27017"
     volumes:
-      - /home/ubuntu/data:/data/db
+      - mongo1vol:/data/db
     command: "--replSet myReplicaSet"
   mongo2:
-    image: mongo
+    image: mongo:4.4.24
     container_name: mongo2
     networks:
       - mongoCluster
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo2vol:/data/db
     command: "--replSet myReplicaSet"
   mongo3:
-    image: mongo
+    image: mongo:4.4.24
     container_name: mongo3
     networks:
       - mongoCluster
+    ports:
+      - "27019:27017"
     command: "--replSet myReplicaSet"
+    volumes:
+      - mongo3vol:/data/db
   mongo-init:
     image: mongo
     container_name: mongo-init
@@ -43,15 +51,15 @@ services:
       });
       "
   yolo5app:
-    image: amiraniv/yolo5app:v1.0
-    container_name: yolo5app
+    image: yolo5-app:latest
+    container_name: yolo5-app
     networks:
       - mongoCluster
     ports:
       - "8081:8081"
   telebot:
-    image: amiraniv/telebot:v1.0
-    container_name: telebot
+    image: telegram_bot:latest
+    container_name: telegram_bot
     networks:
       - mongoCluster
     ports:
@@ -59,7 +67,7 @@ services:
     env_file:
       - secrets.env
     environment:
-      - CONT_NAME=yolo5app
+      - CONT_NAME=yolo5-app
 networks:
   mongoCluster:
     driver: bridge

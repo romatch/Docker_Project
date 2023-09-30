@@ -31,17 +31,10 @@ services:
       - mongo1
       - mongo2
       - mongo3
-    command: >
-      mongo mongo1:27017/admin --eval "
-      rs.initiate({
-        _id: 'myReplicaSet',
-        members: [
-          { _id: 0, host: 'mongo1:27017' },
-          { _id: 1, host: 'mongo2:27017' },
-          { _id: 2, host: 'mongo3:27017' }
-        ]
-      });
-      "
+    volumes:
+      - ./scripts/wait-for-it.sh:/scripts/wait-for-it.sh
+    command: ["./scripts/wait-for-it.sh", "mongo1:27017", "--", "mongo", "mongo1:27017/admin", "--eval", "rs.initiate({ _id: 'myReplicaSet', members: [{ _id: 0, host: 'mongo1:27017' }, { _id: 1, host: 'mongo2:27017' }, { _id: 2, host: 'mongo3:27017' }] });"]
+
   yolo5app:
     image: romkatch/yolo5-app:latest
     container_name: yolo5-app

@@ -8,30 +8,22 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - mongo1vol:/data/db
+      - /home/ubuntu/data:/data/db
     command: "--replSet myReplicaSet"
   mongo2:
     image: mongo:4.4.24
     container_name: mongo2
     networks:
       - mongoCluster
-    ports:
-      - "27018:27017"
-    volumes:
-      - mongo2vol:/data/db
     command: "--replSet myReplicaSet"
   mongo3:
     image: mongo:4.4.24
     container_name: mongo3
     networks:
       - mongoCluster
-    ports:
-      - "27019:27017"
     command: "--replSet myReplicaSet"
-    volumes:
-      - mongo3vol:/data/db
   mongo-init:
-    image: mongo
+    image: mongo:4.4.24
     container_name: mongo-init
     networks:
       - mongoCluster
@@ -51,14 +43,19 @@ services:
       });
       "
   yolo5app:
-    image: yolo5-app:latest
+    image: romkatch/yolo5-app:latest
     container_name: yolo5-app
     networks:
       - mongoCluster
     ports:
       - "8081:8081"
+    volumes:
+      - /home/romka/.aws/credentials:/root/.aws/credentials
+    env_file:
+      - secrets.env
+
   telebot:
-    image: telegram_bot:latest
+    image: romkatch/telegram_bot:latest
     container_name: telegram_bot
     networks:
       - mongoCluster
@@ -68,6 +65,9 @@ services:
       - secrets.env
     environment:
       - CONT_NAME=yolo5-app
+    volumes:
+      - /home/romka/.aws/credentials:/root/.aws/credentials
+
 networks:
   mongoCluster:
     driver: bridge
